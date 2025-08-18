@@ -9,7 +9,6 @@ RUN apt-get update && apt-get install -y \
     gnupg \
     libglib2.0-0 \
     libnss3 \
-    libgconf-2-4 \
     libfontconfig1 \
     libxi6 \
     libxcursor1 \
@@ -53,3 +52,4 @@ EXPOSE 8000
 
 # Comando para ejecutar el servidor
 CMD ["uvicorn", "api:app", "--host", "0.0.0.0", "--port", "8000"]
+
