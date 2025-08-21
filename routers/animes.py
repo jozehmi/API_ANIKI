@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Query, HTTPException
 from bs4 import BeautifulSoup
 import re, json, demjson3, asyncio, requests
-from a.scraping import fetch_html, find_sveltekit_script, extract_js_object, extract_home_block
+from scraping import fetch_html, find_sveltekit_script, extract_js_object, extract_home_block
 from utils.builders import (
     build_poster_url, build_backdrop_url,
     build_episode_image_url, build_episode_url,
