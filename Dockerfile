@@ -40,9 +40,11 @@ RUN CHROME_VERSION=$(google-chrome --version | awk '{print $3}') && \
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copiar el código
-COPY . /app
-WORKDIR /app
+# Copiar el código al directorio raíz
+COPY . /
+
+# Establecer el directorio de trabajo en la raíz
+WORKDIR /
 
 # Exponer puerto
 EXPOSE 8000
