@@ -6,7 +6,7 @@ import re
 from urllib.parse import urljoin
 from typing import Optional, List, Dict, Any
 
-from app.core.cache import get_cached, set_cache  # tu caché síncrona
+from core.cache import get_cached, set_cache  # tu caché síncrona
 
 router = APIRouter()
 

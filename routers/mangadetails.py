@@ -5,8 +5,8 @@ import httpx
 import re
 from typing import Dict
 
-from app.core.cache import get_cached, set_cache
-from .mangas import normalize_href, extract_cover_url_from_element, detect_type_from_element
+from core.cache import get_cached, set_cache
+from mangas import normalize_href, extract_cover_url_from_element, detect_type_from_element
 
 # Configuración básica de logs
 logging.basicConfig(level=logging.INFO, format="%(levelname)s [%(asctime)s] %(message)s")

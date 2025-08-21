@@ -1,15 +1,15 @@
 from fastapi import APIRouter, Query, HTTPException
 from bs4 import BeautifulSoup
 import re, json, demjson3, asyncio, requests
-from app.utils.scraping import fetch_html, find_sveltekit_script, extract_js_object, extract_home_block
-from app.utils.builders import (
+from a.scraping import fetch_html, find_sveltekit_script, extract_js_object, extract_home_block
+from utils.builders import (
     build_poster_url, build_backdrop_url,
     build_episode_image_url, build_episode_url,
     build_featured_image_url, build_latest_episode_image_url,
     build_latest_media_image_url, build_watch_url
 )
-from app.core.cache import get_cached, set_cache
-from app.core.config import BASE_URL, VALID_CATEGORIES, VALID_GENRES, VALID_STATUS, VALID_ORDERS, VALID_LETTERS
+from core.cache import get_cached, set_cache
+from core.config import BASE_URL, VALID_CATEGORIES, VALID_GENRES, VALID_STATUS, VALID_ORDERS, VALID_LETTERS
 
 router = APIRouter()
 

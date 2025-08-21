@@ -1,5 +1,5 @@
 import time
-from app.core.config import CACHE_TTL
+from core.config import CACHE_TTL
 
 cache = {}
 

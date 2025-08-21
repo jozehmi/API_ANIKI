@@ -1,6 +1,6 @@
 import re, json, httpx
 from bs4 import BeautifulSoup
-from app.core.config import HEADERS
+from core.config import HEADERS
 
 async def fetch_html(url):
     async with httpx.AsyncClient() as client:
