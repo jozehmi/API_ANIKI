@@ -10,8 +10,10 @@ HEADERS = {
 
 ZONATMO_HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
-    # "Referer": "https://zonatmo.com/",
-    # "Cookie": "aquí_tus_cookies_si_es_necesario",
+    "Referer": "https://zonatmo.com/",
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+    "Accept-Language": "es-ES,es;q=0.9,en;q=0.8",
+    # "Cookie": "agrega aquí tus cookies si tienes una sesión válida",
 }
 
 CACHE_TTL = 300  # segundos
