@@ -1,0 +1,7 @@
+fastapi
+uvicorn[standard]
+requests
+httpx
+beautifulsoup4
+demjson3
+selenium
