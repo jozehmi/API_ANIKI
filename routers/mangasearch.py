@@ -5,6 +5,7 @@ from bs4 import BeautifulSoup
 from pydantic import BaseModel
 import urllib.parse
 import re
+from core.config import ZONATMO_HEADERS
 
 router = APIRouter()
 
@@ -164,9 +165,7 @@ def build_url(
     return f"{base_url}?{urllib.parse.urlencode(query_params, doseq=True)}"
 
 def scrape(url: str) -> List[MangaSearchResult]:
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
-    }
+    headers = ZONATMO_HEADERS
     try:
         response = requests.get(url, headers=headers, timeout=20)
         response.raise_for_status()
@@ -258,4 +257,5 @@ async def search_get(
                     translation_status, webcomic, yonkoma, amateur, erotic,
                     genres, exclude_genres, page, filter_by)
     results = scrape(url)
+    return MangaSearchResponse(url=url, results=results)
     return MangaSearchResponse(url=url, results=results)

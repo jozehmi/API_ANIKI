@@ -7,13 +7,12 @@ from urllib.parse import urljoin
 from typing import Optional, List, Dict, Any
 
 from core.cache import get_cached, set_cache  # tu caché síncrona
+from core.config import ZONATMO_BASE_URL, ZONATMO_HEADERS
 
 router = APIRouter()
 
-BASE_URL = "https://zonatmo.com"
-HEADERS = {
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/124.0.0.0 Safari/537.36"
-}
+BASE_URL = ZONATMO_BASE_URL
+HEADERS = ZONATMO_HEADERS
 
 
 # ===========================
@@ -426,5 +425,8 @@ async def home(
         "top_semanal": {"count": len(top_semanal), "items": top_semanal},
         "top_mensual": {"count": len(top_mensual), "items": top_mensual},
     }
+
+    return result
+    
 
     return result

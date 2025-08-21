@@ -10,6 +10,7 @@ from urllib.parse import urljoin
 from bs4 import BeautifulSoup
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
+from core.config import ZONATMO_HEADERS
 
 router = APIRouter()
 
@@ -36,9 +37,7 @@ def create_session_with_retries():
     return session
 
 def extract_image_data(url: str):
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
-    }
+    headers = ZONATMO_HEADERS
     session = create_session_with_retries()
     response = session.get(url, headers=headers, verify=False)
     if response.status_code != 200:
@@ -151,10 +150,9 @@ async def proxy_image(viewer_id: str, page_number: int, filename: str):
     dir_path = viewer_info["dir_path"]
     referer = viewer_info["referer"]
     
-    headers = {
-        "Referer": referer,
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
-    }
+    headers = ZONATMO_HEADERS.copy()
+    headers["Referer"] = referer
+    headers["User-Agent"] = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
     session = create_session_with_retries()
     image_url = urljoin(dir_path, filename)
     response = session.get(image_url, headers=headers, stream=True, verify=False)

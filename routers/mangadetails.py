@@ -6,6 +6,7 @@ import re
 from typing import Dict
 
 from core.cache import get_cached, set_cache
+from core.config import ZONATMO_BASE_URL, ZONATMO_HEADERS
 from routers.mangas import normalize_href, extract_cover_url_from_element, detect_type_from_element
 
 # Configuración básica de logs
@@ -14,11 +15,8 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
-BASE_URL = "https://zonatmo.com"
-HEADERS = {
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/124.0.0.0 Safari/537.36",
-    "Referer": BASE_URL
-}
+BASE_URL = ZONATMO_BASE_URL
+HEADERS = ZONATMO_HEADERS
 
 
 async def fetch_html_remote(url: str, force_refresh: bool = False) -> str:
