@@ -1,18 +1,45 @@
-# api-aniki
+# API ANIKI
 
-API REST para acceder a información de animes y mangas, incluyendo filtros, detalles, imágenes, capítulos y búsqueda avanzada. Ideal para aplicaciones, bots o IA que requieran consumir datos de anime/manga desde un backend centralizado.
+API REST para acceder a información de animes y mangas, incluyendo filtros, detalles, imágenes, capítulos y búsqueda avanzada.
 
 ---
 
-## URL Base
+## Despliegue
 
-La API debe estar desplegada en un servidor FastAPI (por ejemplo, Render.com). Supón que la URL base es:
+La API está desplegada en:  
+**https://api-aniki.onrender.com/**
 
+---
+
+## Uso con Docker
+
+Puedes levantar la API localmente usando Docker:
+
+```bash
+docker build -t api-aniki .
+docker run -p 8000:8000 api-aniki
 ```
-https://api-aniki.onrender.com
-```
 
-Todos los endpoints están bajo el prefijo `/api`.
+Esto expondrá la API en `http://localhost:8000/`.
+
+---
+
+## Estructura de rutas (`main.py`)
+
+Las rutas principales se incluyen así en `main.py`:
+
+```python
+# ...existing code...
+app.include_router(animes.router, prefix="/api/animes")
+app.include_router(animeschedule.router, prefix="/api")
+app.include_router(animefilters.router, prefix="/api")
+app.include_router(mangas.router, prefix="/api/mangas")
+app.include_router(mangadetails.router, prefix="/api/mangas")
+app.include_router(mangaimages.router, prefix="/api/mangas")
+app.include_router(mangasearch.router, prefix="/api/mangas")
+app.include_router(mangafilters.router, prefix="/api/mangas")
+# ...existing code...
+```
 
 ---
 
@@ -21,134 +48,109 @@ Todos los endpoints están bajo el prefijo `/api`.
 ### Animes
 
 - **GET `/api/animes`**  
-  Listado de animes con filtros avanzados.
-  - Parámetros (query):
-    - `category`: lista, categorías válidas (`tv-anime`, `pelicula`, `ova`, `especial`)
-    - `genre`: lista, géneros válidos (`accion`, `aventura`, etc.)
-    - `min_year`, `max_year`: año de emisión
-    - `status`: estado (`emision`, `finalizado`, `proximamente`)
-    - `order`: orden (`predeterminado`, `popular`, etc.)
-    - `letter`: letra inicial
-    - `page`: número de página
-
-  **Ejemplo:**
+  Listado de animes filtrados.  
+  **Ejemplo:**  
   ```
-  GET /api/animes?category=tv-anime&genre=accion&order=popular&page=1
+  GET /api/animes?category=tv-anime&genre=accion&page=1
   ```
 
 - **GET `/api/animes/home`**  
-  Datos destacados de la home: animes destacados, últimos episodios y últimos añadidos.
+  Home con animes destacados y últimos episodios.  
+  **Ejemplo:**  
+  ```
+  GET /api/animes/home
+  ```
 
 - **GET `/api/animes/{slug}`**  
-  Detalles completos de un anime por su slug.
+  Detalles de un anime.  
+  **Ejemplo:**  
+  ```
+  GET /api/animes/one-piece
+  ```
 
 - **GET `/api/animes/{slug}/{number}`**  
-  Detalles y enlaces de un episodio específico.
+  Detalles de un episodio.  
+  **Ejemplo:**  
+  ```
+  GET /api/animes/one-piece/1
+  ```
 
 - **GET `/api/horario`**  
-  Horario semanal de emisión de animes.
+  Horario semanal de emisión.  
+  **Ejemplo:**  
+  ```
+  GET /api/horario
+  ```
 
 - **GET `/api/filters`**  
-  Opciones válidas para filtros de animes.
+  Opciones válidas para filtros de animes.  
+  **Ejemplo:**  
+  ```
+  GET /api/filters
+  ```
 
 ---
 
 ### Mangas
 
 - **GET `/api/mangas/home`**  
-  Resumen completo de mangas: populares, trending, últimos añadidos, subidas, top semanal/mensual.
+  Resumen de mangas destacados y últimos añadidos.  
+  **Ejemplo:**  
+  ```
+  GET /api/mangas/home
+  ```
 
 - **GET `/api/mangas/filters`**  
-  Opciones válidas para filtros de mangas.
+  Opciones válidas para filtros de mangas.  
+  **Ejemplo:**  
+  ```
+  GET /api/mangas/filters
+  ```
 
 - **GET `/api/mangas/search`**  
-  Búsqueda avanzada de mangas con múltiples filtros.
-  - Parámetros (query):
-    - `title`, `order_item`, `order_dir`, `type`, `demography`, `status`, `translation_status`, `webcomic`, `yonkoma`, `amateur`, `erotic`, `genres`, `exclude_genres`, `page`, `filter_by`
-
-  **Ejemplo:**
+  Búsqueda avanzada de mangas.  
+  **Ejemplo:**  
   ```
-  GET /api/mangas/search?title=Solo Leveling&type=manhwa&order_item=score&order_dir=desc&page=1
+  GET /api/mangas/search?title=Solo Leveling&page=1
   ```
 
 - **GET `/api/mangas/detalle?url=...`**  
-  Detalles completos de una obra manga (requiere URL de ZonaTMO).
+  Detalles completos de un manga.  
+  **Ejemplo:**  
+  ```
+  GET /api/mangas/detalle?url=https://www.zonatmo.com/manga/solo-leveling
+  ```
 
 - **GET `/api/mangas/resolve_chapter?upload_url=...`**  
-  Resuelve la URL de un capítulo a su forma final de visualización.
+  Resuelve la URL de un capítulo.  
+  **Ejemplo:**  
+  ```
+  GET /api/mangas/resolve_chapter?upload_url=https://www.zonatmo.com/viewer/12345
+  ```
 
 - **POST `/api/mangas/scrape-manga`**  
-  Extrae imágenes de un capítulo manga (requiere URL de viewer de ZonaTMO).
-  - Body JSON: `{ "url": "<url del capítulo>" }`
-
-- **GET `/api/mangas/scrape-manga/viewer/{chapter_title}/{uuid}`**  
-  Visor HTML para las imágenes extraídas de un capítulo.
-
-- **GET `/api/mangas/scrape-manga/image/{viewer_id}/{page_number}/{filename}`**  
-  Proxy para obtener imágenes individuales de un capítulo.
-
----
-
-## Ejemplo de consumo (Python)
-
-```python
-import requests
-
-# Listar animes filtrados
-resp = requests.get("https://api-aniki.onrender.com/api/animes", params={
-    "category": "tv-anime",
-    "genre": "accion",
-    "order": "popular",
-    "page": 1
-})
-print(resp.json())
-
-# Buscar mangas
-resp = requests.get("https://api-aniki.onrender.com/api/mangas/search", params={
-    "title": "Solo Leveling",
-    "type": "manhwa",
-    "order_item": "score",
-    "order_dir": "desc",
-    "page": 1
-})
-print(resp.json())
-```
+  Extrae imágenes de un capítulo manga.  
+  **Ejemplo:**  
+  ```json
+  POST /api/mangas/scrape-manga
+  {
+    "url": "https://www.zonatmo.com/viewer/12345"
+  }
+  ```
 
 ---
 
-## Filtros y opciones válidas
-
-Consulta `/api/filters` y `/api/mangas/filters` para obtener las opciones válidas de cada filtro (géneros, categorías, estados, orden, etc.).
-
----
-
-## Respuestas y formato
+## Respuestas
 
 - Todas las respuestas son en formato JSON.
-- Los errores siguen el estándar HTTP (400, 404, 500, etc.).
-- Los endpoints de imágenes devuelven directamente el binario de la imagen.
-
----
-
-## Uso para IA y desarrolladores
-
-- La API está pensada para ser consumida por cualquier cliente HTTP.
-- Los endpoints permiten obtener datos estructurados para construir aplicaciones, bots, o sistemas de recomendación.
-- Los filtros permiten búsquedas avanzadas y personalizadas.
-
-
-## Recomendaciones para IA y desarrolladores
-
-- La API sigue convenciones REST, por lo que puedes interactuar con ella usando cualquier cliente HTTP.
-- Los datos se envían y reciben en formato JSON.
-- Para construir aplicaciones basadas en esta API, simplemente realiza peticiones HTTP a los endpoints documentados.
-- Si necesitas endpoints adicionales, revisa el código fuente o consulta la documentación interna del proyecto.
+- Los endpoints de imágenes devuelven el binario de la imagen.
+- Los errores siguen el estándar HTTP.
 
 ---
 
 ## Referencias
 
 - [Render.com](https://dashboard.render.com/)
-- [Documentación REST](https://restfulapi.net/)
+- [FastAPI](https://fastapi.tiangolo.com/)
 
 ---
