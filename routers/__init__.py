@@ -1,2 +1,2 @@
-# app/routers/__init__.py
+# routers/__init__.py
 from . import animefilters, animes, animeschedule
