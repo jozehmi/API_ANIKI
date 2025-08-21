@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from app.routers import animefilters, animes, animeschedule, mangas, mangadetails, mangaimages, mangasearch, mangafilters
+from routers import animefilters, animes, animeschedule, mangas, mangadetails, mangaimages, mangasearch, mangafilters
 
 app = FastAPI(title="Anime & Manga API")
 
