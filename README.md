@@ -7,7 +7,7 @@ API REST para acceder a información de animes y mangas, incluyendo filtros, det
 ## Despliegue
 
 La API está desplegada en:  
-**https://api-aniki.onrender.com/**
+**https://api-aniki-oi7a.vercel.app/**
 
 ---
 
