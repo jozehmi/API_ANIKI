@@ -3,7 +3,9 @@ from fastapi import APIRouter, HTTPException, Query
 from bs4 import BeautifulSoup
 import httpx
 import re
+import random
 from urllib.parse import urljoin
+from playwright.async_api import async_playwright
 from typing import Optional, List, Dict, Any
 
 from app.core.cache import get_cached, set_cache  # tu caché síncrona
@@ -14,33 +16,85 @@ router = APIRouter()
 BASE_URL = ZONATMO_BASE_URL
 HEADERS = ZONATMO_HEADERS
 
+# ===========================
+# Lista de proxies autenticados
+# Formato: IP:PUERTO:USUARIO:CONTRASEÑA
+# ===========================
+PROXIES = [
+    "23.95.150.145:6114:xjyuuqko:u9oqfcqmfb7o",
+    "198.23.239.134:6540:xjyuuqko:u9oqfcqmfb7o",
+    "45.38.107.97:6014:xjyuuqko:u9oqfcqmfb7o",
+    "107.172.163.27:6543:xjyuuqko:u9oqfcqmfb7o",
+    "64.137.96.74:6641:xjyuuqko:u9oqfcqmfb7o",
+    "45.43.186.39:6257:xjyuuqko:u9oqfcqmfb7o",
+    "154.203.43.247:5536:xjyuuqko:u9oqfcqmfb7o",
+    "216.10.27.159:6837:xjyuuqko:u9oqfcqmfb7o",
+    "136.0.207.84:6661:xjyuuqko:u9oqfcqmfb7o",
+    "142.147.128.93:6593:xjyuuqko:u9oqfcqmfb7o",
+]
+
+
+def get_random_proxy() -> Dict[str, str]:
+    """
+    Devuelve un proxy httpx compatible, elegido aleatoriamente de la lista.
+    """
+    proxy_str = random.choice(PROXIES)
+    ip, port, user, password = proxy_str.split(":")
+    return {
+        "http://": f"http://{user}:{password}@{ip}:{port}",
+        "https://": f"http://{user}:{password}@{ip}:{port}",
+    }
+
 
 # ===========================
 # Helpers
 # ===========================
-
 async def fetch_html_remote(url: str, force_refresh: bool = False) -> str:
     """
-    Recupera HTML remoto con caché local. Si force_refresh es True se ignora la caché.
+    Recupera HTML remoto con caché local usando Playwright + proxies.
     """
     cached = None if force_refresh else get_cached(url)
     if cached:
         return cached
 
-    try:
-        async with httpx.AsyncClient(headers=HEADERS, timeout=15.0) as client:
-            resp = await client.get(url)
-            resp.raise_for_status()
-            text = resp.text
-    except httpx.HTTPError as e:
-        raise HTTPException(status_code=502, detail=f"Error fetching remote: {str(e)}")
+    last_error = None
+    async with async_playwright() as p:
+        for proxy in PROXIES:
+            ip, port, user, password = proxy.split(":")
+            proxy_dict = {
+                "server": f"http://{ip}:{port}",
+                "username": user,
+                "password": password,
+            }
+            try:
+                browser = await p.chromium.launch(
+                    headless=True,
+                    proxy=proxy_dict,
+                    args=["--no-sandbox", "--disable-setuid-sandbox"],
+                )
+                page = await browser.new_page(
+                    user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                               "AppleWebKit/537.36 (KHTML, like Gecko) "
+                               "Chrome/117.0.0.0 Safari/537.36",
+                    viewport={"width": 1280, "height": 800},
+                )
+                await page.goto(url, timeout=20000)
+                await page.wait_for_timeout(3000)
 
-    # almacenar sólo si no forzamos refresco
-    if not force_refresh:
-        set_cache(url, text)
-    return text
+                html = await page.content()
+                await browser.close()
 
+                if not force_refresh:
+                    set_cache(url, html)
+                return html
+            except Exception as e:
+                last_error = e
+                continue
 
+    raise HTTPException(
+        status_code=502,
+        detail=f"Error fetching remote with proxies (all failed): {last_error}",
+    )
 def normalize_href(href: Optional[str]) -> Optional[str]:
     if not href:
         return None
