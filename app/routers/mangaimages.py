@@ -10,7 +10,7 @@ from urllib.parse import urljoin
 from bs4 import BeautifulSoup
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
-from core.config import ZONATMO_HEADERS
+from app.core.config import ZONATMO_HEADERS
 
 router = APIRouter()
 

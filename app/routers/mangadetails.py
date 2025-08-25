@@ -5,9 +5,9 @@ import httpx
 import re
 from typing import Dict
 
-from core.cache import get_cached, set_cache
-from core.config import ZONATMO_BASE_URL, ZONATMO_HEADERS
-from routers.mangas import normalize_href, extract_cover_url_from_element, detect_type_from_element
+from app.core.cache import get_cached, set_cache
+from app.core.config import ZONATMO_BASE_URL, ZONATMO_HEADERS
+from app.routers.mangas import normalize_href, extract_cover_url_from_element, detect_type_from_element
 
 # Configuración básica de logs
 logging.basicConfig(level=logging.INFO, format="%(levelname)s [%(asctime)s] %(message)s")

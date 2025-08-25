@@ -7,3 +7,4 @@ demjson3
 selenium
 lxml
 python-multipart
+selenium_stealth

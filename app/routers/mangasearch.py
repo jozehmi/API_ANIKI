@@ -8,7 +8,7 @@ from bs4 import BeautifulSoup
 from pydantic import BaseModel
 import urllib.parse
 import re
-from core.config import ZONATMO_HEADERS
+from app.core.config import ZONATMO_HEADERS
 
 router = APIRouter()
 

@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 from datetime import datetime
-from core.config import VALID_CATEGORIES, VALID_GENRES, VALID_STATUS, VALID_ORDERS, VALID_LETTERS
+from app.core.config import VALID_CATEGORIES, VALID_GENRES, VALID_STATUS, VALID_ORDERS, VALID_LETTERS
 
 router = APIRouter()
 

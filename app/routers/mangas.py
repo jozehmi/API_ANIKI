@@ -6,8 +6,8 @@ import re
 from urllib.parse import urljoin
 from typing import Optional, List, Dict, Any
 
-from core.cache import get_cached, set_cache  # tu caché síncrona
-from core.config import ZONATMO_BASE_URL, ZONATMO_HEADERS
+from app.core.cache import get_cached, set_cache  # tu caché síncrona
+from app.core.config import ZONATMO_BASE_URL, ZONATMO_HEADERS
 
 router = APIRouter()
 

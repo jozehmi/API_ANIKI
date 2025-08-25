@@ -5,9 +5,9 @@ from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.support.ui import WebDriverWait
 from bs4 import BeautifulSoup
 import asyncio, re, json
-from core.cache import get_cached, set_cache
-from core.config import BASE_URL
-from utils.scraping import fetch_html
+from app.core.cache import get_cached, set_cache
+from app.core.config import BASE_URL
+from app.utils.scraping import fetch_html
 
 router = APIRouter()
 
