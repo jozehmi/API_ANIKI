@@ -174,17 +174,14 @@ def scrape(url: str):
     chrome_options.add_argument("--disable-dev-shm-usage")
     chrome_options.add_argument("--disable-gpu")
     chrome_options.add_argument("window-size=1920,1080")
-
-    # Cambiar user-agent para parecer navegador real
     chrome_options.add_argument(
         "user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-        "AppleWebKit/537.36 (KHTML, like Gecko) "
-        "Chrome/124.0.0.0 Safari/537.36"
+        "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
     )
 
     driver = webdriver.Chrome(options=chrome_options)
 
-    # Aplicar stealth para evitar detección de headless
+    # Evitar detección de headless
     stealth(driver,
         languages=["es-ES", "es"],
         vendor="Google Inc.",
@@ -197,13 +194,16 @@ def scrape(url: str):
     try:
         driver.get(url)
         html = driver.page_source
+    except Exception as e:
+        driver.quit()
+        raise HTTPException(status_code=500, detail=f"Error fetching ZonaTMO: {str(e)}")
     finally:
         driver.quit()
 
     soup = BeautifulSoup(html, "html.parser")
     cards = soup.select("div.element")
-
     results = []
+
     for card in cards:
         a_elem = card.find("a", href=True)
         if not a_elem:
@@ -213,11 +213,9 @@ def scrape(url: str):
         if not thumb:
             continue
 
-        # Título
         title_elem = thumb.select_one(".thumbnail-title h4.text-truncate")
         title_text = (title_elem.get("title") or title_elem.get_text(strip=True)) if title_elem else "Unknown"
 
-        # Score
         score_elem = thumb.select_one("span.score > span")
         score_text = score_elem.get_text(strip=True) if score_elem else "0"
         try:
@@ -225,18 +223,14 @@ def scrape(url: str):
         except ValueError:
             score = 0.0
 
-        # Tipo
         type_elem = thumb.select_one("span.book-type")
         type_text = type_elem.get_text(strip=True) if type_elem else "Unknown"
 
-        # Demografía
         demography_elem = thumb.select_one("span.demography")
         demography_text = demography_elem.get_text(strip=True) if demography_elem else "Unknown"
 
-        # Erótico
         is_erotic = thumb.select_one("i.fas.fa-heartbeat") is not None
 
-        # Imagen
         image_url = "Unknown"
         for style_tag in thumb.find_all("style"):
             m = re.search(r"background-image:\s*url\(['\"]?(.*?)['\"]?\)", style_tag.text)
