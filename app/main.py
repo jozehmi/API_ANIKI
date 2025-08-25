@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from app.routers import animefilters, animes, animeschedule, mangas, mangadetails, mangaimages, mangasearch, mangafilters
+from app.routers import animefilters, animes, animeschedule, mangas, mangadetails, mangaimages, mangasearch, mangafilters,test
 
 app = FastAPI(title="Anime & Manga API")
 
@@ -12,6 +12,7 @@ app.include_router(mangadetails.router, prefix="/api/mangas", tags=["Manga Detai
 app.include_router(mangaimages.router, prefix="/api/mangas", tags=["Manga Images"])
 app.include_router(mangasearch.router, prefix="/api/mangas", tags=["Manga Search"])
 app.include_router(mangafilters.router, prefix="/api/mangas", tags=["Manga Filters"])
+app.include_router(test.router, prefix="/api/mangas", tags=["Manga test"])
 
 if __name__ == "__main__":
     import uvicorn

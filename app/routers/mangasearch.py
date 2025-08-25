@@ -1,16 +1,31 @@
 from fastapi import APIRouter, HTTPException, Query
 from typing import Optional, List
-import requests
-from selenium import webdriver
-from selenium.webdriver.chrome.options import Options
-from selenium_stealth import stealth
-from bs4 import BeautifulSoup
 from pydantic import BaseModel
+from playwright.async_api import async_playwright
+from playwright.sync_api import sync_playwright
 import urllib.parse
 import re
+import time
 from app.core.config import ZONATMO_HEADERS
 
 router = APIRouter()
+
+# ----------------------------
+# Lista de proxies autenticados
+# Formato: IP:PUERTO:USUARIO:CONTRASEÑA
+# ----------------------------
+PROXIES = [
+    "23.95.150.145:6114:xjyuuqko:u9oqfcqmfb7o",
+    "198.23.239.134:6540:xjyuuqko:u9oqfcqmfb7o",
+    "45.38.107.97:6014:xjyuuqko:u9oqfcqmfb7o",
+    "107.172.163.27:6543:xjyuuqko:u9oqfcqmfb7o",
+    "64.137.96.74:6641:xjyuuqko:u9oqfcqmfb7o",
+    "45.43.186.39:6257:xjyuuqko:u9oqfcqmfb7o",
+    "154.203.43.247:5536:xjyuuqko:u9oqfcqmfb7o",
+    "216.10.27.159:6837:xjyuuqko:u9oqfcqmfb7o",
+    "136.0.207.84:6661:xjyuuqko:u9oqfcqmfb7o",
+    "142.147.128.93:6593:xjyuuqko:u9oqfcqmfb7o",
+]
 
 # ----------------------------
 # Models
@@ -90,64 +105,14 @@ def build_url(
     translation_status, webcomic, yonkoma, amateur, erotic,
     genres, exclude_genres, page, filter_by
 ) -> str:
-    GENRE_TO_ID = {
-        "action": 1,
-        "adventure": 2,
-        "comedy": 3,
-        "drama": 4,
-        "slice_of_life": 5,
-        "ecchi": 6,
-        "fantasy": 7,
-        "magic": 8,
-        "supernatural": 9,
-        "horror": 10,
-        "mystery": 11,
-        "psychological": 12,
-        "romance": 13,
-        "sci_fi": 14,
-        "thriller": 15,
-        "sports": 16,
-        "girls_love": 17,
-        "boys_love": 18,
-        "harem": 19,
-        "mecha": 20,
-        "survival": 21,
-        "reincarnation": 22,
-        "gore": 23,
-        "apocalyptic": 24,
-        "tragedy": 25,
-        "school_life": 26,
-        "history": 27,
-        "military": 28,
-        "police": 29,
-        "crime": 30,
-        "super_powers": 31,
-        "vampires": 32,
-        "martial_arts": 33,
-        "samurai": 34,
-        "gender_bender": 35,
-        "virtual_reality": 36,
-        "cyberpunk": 37,
-        "music": 38,
-        "parody": 39,
-        "animation": 40,
-        "demons": 41,
-        "family": 42,
-        "foreign": 43,
-        "kids": 44,
-        "reality": 45,
-        "soap_opera": 46,
-        "war": 47,
-        "western": 48,
-        "traps": 49
-    }
+    GENRE_TO_ID = {g: i+1 for i, g in enumerate(VALID_GENRES)}
 
     query_params = {
         "order_item": order_item or "likes_count",
         "order_dir": order_dir or "desc",
         "title": title or "",
-        "_pg": "1",  # Always set to "1" as a fixed parameter
-        "filter_by": filter_by,  # Always include filter_by, defaults to "title"
+        "_pg": "1",
+        "filter_by": filter_by,
         "type": type or "",
         "demography": demography or "",
         "status": status or "",
@@ -158,7 +123,7 @@ def build_url(
         "erotic": erotic or ""
     }
     if page and page > 1:
-        query_params["page"] = str(page)  # Only add "page" if greater than 1
+        query_params["page"] = str(page)
     if genres:
         query_params["genders[]"] = [str(GENRE_TO_ID[g]) for g in genres]
     if exclude_genres:
@@ -167,91 +132,95 @@ def build_url(
     base_url = "https://zonatmo.com/library"
     return f"{base_url}?{urllib.parse.urlencode(query_params, doseq=True)}"
 
-def scrape(url: str):
-    chrome_options = Options()
-    chrome_options.add_argument("--headless=new")
-    chrome_options.add_argument("--no-sandbox")
-    chrome_options.add_argument("--disable-dev-shm-usage")
-    chrome_options.add_argument("--disable-gpu")
-    chrome_options.add_argument("window-size=1920,1080")
-    chrome_options.add_argument(
-        "user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-        "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
-    )
+# ----------------------------
+# Scrape usando Playwright con proxies
+# ----------------------------
+async def scrape(url: str) -> List[MangaSearchResult]:
+    results: List[MangaSearchResult] = []
 
-    driver = webdriver.Chrome(options=chrome_options)
+    async with async_playwright() as p:
+        for proxy in PROXIES:
+            ip, port, user, password = proxy.split(":")
+            proxy_dict = {
+                "server": f"http://{ip}:{port}",
+                "username": user,
+                "password": password
+            }
+            try:
+                browser = await p.chromium.launch(
+                    headless=True,
+                    proxy=proxy_dict,
+                    args=["--no-sandbox", "--disable-setuid-sandbox"]
+                )
+                page = await browser.new_page(
+                    user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                               "AppleWebKit/537.36 (KHTML, like Gecko) "
+                               "Chrome/117.0.0.0 Safari/537.36",
+                    viewport={"width": 1280, "height": 800}
+                )
+                await page.goto(url, timeout=20000)
+                await page.wait_for_timeout(5000)
 
-    # Evitar detección de headless
-    stealth(driver,
-        languages=["es-ES", "es"],
-        vendor="Google Inc.",
-        platform="Win32",
-        webgl_vendor="Intel Inc.",
-        renderer="Intel Iris OpenGL Engine",
-        fix_hairline=True,
-    )
+                cards = await page.query_selector_all("div.element")
+                if not cards:
+                    await browser.close()
+                    continue
 
-    try:
-        driver.get(url)
-        html = driver.page_source
-    except Exception as e:
-        driver.quit()
-        raise HTTPException(status_code=500, detail=f"Error fetching ZonaTMO: {str(e)}")
-    finally:
-        driver.quit()
+                for card in cards:
+                    a_elem = await card.query_selector("a[href]")
+                    manga_url = await a_elem.get_attribute("href") if a_elem else "Unknown"
 
-    soup = BeautifulSoup(html, "html.parser")
-    cards = soup.select("div.element")
-    results = []
+                    thumb = await card.query_selector("div.thumbnail.book")
+                    if not thumb:
+                        continue
 
-    for card in cards:
-        a_elem = card.find("a", href=True)
-        if not a_elem:
-            continue
-        manga_url = a_elem["href"].strip()
-        thumb = a_elem.select_one("div.thumbnail.book")
-        if not thumb:
-            continue
+                    title_elem = await thumb.query_selector("h4.text-truncate")
+                    title_text = await title_elem.get_attribute("title") if title_elem else "Unknown"
 
-        title_elem = thumb.select_one(".thumbnail-title h4.text-truncate")
-        title_text = (title_elem.get("title") or title_elem.get_text(strip=True)) if title_elem else "Unknown"
+                    score_elem = await thumb.query_selector("span.score > span")
+                    try:
+                        score = float((await score_elem.inner_text()).strip().replace(",", ".")) if score_elem else 0.0
+                    except ValueError:
+                        score = 0.0
 
-        score_elem = thumb.select_one("span.score > span")
-        score_text = score_elem.get_text(strip=True) if score_elem else "0"
-        try:
-            score = float(score_text.replace(",", "."))
-        except ValueError:
-            score = 0.0
+                    type_elem = await thumb.query_selector("span.book-type")
+                    type_text = await type_elem.inner_text() if type_elem else "Unknown"
 
-        type_elem = thumb.select_one("span.book-type")
-        type_text = type_elem.get_text(strip=True) if type_elem else "Unknown"
+                    demography_elem = await thumb.query_selector("span.demography")
+                    demography_text = await demography_elem.get_attribute("title") if demography_elem else "Unknown"
 
-        demography_elem = thumb.select_one("span.demography")
-        demography_text = demography_elem.get_text(strip=True) if demography_elem else "Unknown"
+                    erotic_tag = await thumb.query_selector("i[title='Erótico']")
+                    is_erotic = erotic_tag is not None
 
-        is_erotic = thumb.select_one("i.fas.fa-heartbeat") is not None
+                    styles = await thumb.query_selector_all("style")
+                    image_url = "Unknown"
+                    for style_tag in styles:
+                        m = re.search(r"background-image:\s*url\(['\"]?(.*?)['\"]?\)", await style_tag.inner_text())
+                        if m:
+                            image_url = m.group(1).strip()
+                            break
 
-        image_url = "Unknown"
-        for style_tag in thumb.find_all("style"):
-            m = re.search(r"background-image:\s*url\(['\"]?(.*?)['\"]?\)", style_tag.text)
-            if m:
-                image_url = m.group(1).strip()
-                break
+                    results.append(MangaSearchResult(
+                        title=title_text,
+                        score=score,
+                        type=type_text,
+                        demography=demography_text,
+                        url=manga_url,
+                        image_url=image_url,
+                        is_erotic=is_erotic
+                    ))
 
-        results.append({
-            "title": title_text,
-            "score": score,
-            "type": type_text,
-            "demography": demography_text,
-            "url": manga_url,
-            "image_url": image_url,
-            "is_erotic": is_erotic
-        })
+                await browser.close()
+                if results:
+                    break
+
+            except Exception as e:
+                print(f"Error con proxy {ip}:{port} -> {e}")
 
     return results
 
 # ----------------------------
-# Endpoint SOLO GET
+# Endpoint GET /search
 # ----------------------------
 @router.get("/search", response_model=MangaSearchResponse)
 async def search_get(
@@ -277,6 +246,5 @@ async def search_get(
     url = build_url(title, order_item, order_dir, type, demography, status,
                     translation_status, webcomic, yonkoma, amateur, erotic,
                     genres, exclude_genres, page, filter_by)
-    results = scrape(url)
-    return MangaSearchResponse(url=url, results=results)
+    results = await scrape(url)
     return MangaSearchResponse(url=url, results=results)

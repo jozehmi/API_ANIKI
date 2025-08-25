@@ -8,3 +8,5 @@ selenium
 lxml
 python-multipart
 selenium_stealth
+undetected-chromedriver
+
