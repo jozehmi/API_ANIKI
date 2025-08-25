@@ -1,38 +1,51 @@
-FROM python:3.11-slim
+# Imagen base
+FROM python:3.10-slim
 
-# Instalar dependencias del sistema necesarias para Chrome/Chromedriver
+# Instalar dependencias de sistema
 RUN apt-get update && apt-get install -y \
-    wget curl unzip gnupg \
-    libglib2.0-0 libnss3 libfontconfig1 libxi6 libxcursor1 \
-    libxss1 libxrandr2 libxcomposite1 libasound2 \
-    libatk1.0-0 libatk-bridge2.0-0 libcups2 libdrm2 \
-    libxdamage1 libgbm1 libxkbcommon0 \
+    wget \
+    unzip \
+    gnupg \
+    libnss3 \
+    libxss1 \
+    libappindicator3-1 \
+    libatk-bridge2.0-0 \
+    libatk1.0-0 \
+    libcups2 \
+    libdrm2 \
+    libgbm1 \
+    libxkbcommon0 \
+    libxrandr2 \
+    xdg-utils \
+    libasound2 \
+    fonts-liberation \
     && rm -rf /var/lib/apt/lists/*
 
 # Instalar Google Chrome estable
-RUN wget -q https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb && \
-    apt-get update && apt-get install -y ./google-chrome-stable_current_amd64.deb || apt-get -f install -y && \
-    rm google-chrome-stable_current_amd64.deb
+RUN wget -q https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb \
+    && apt-get install -y ./google-chrome-stable_current_amd64.deb \
+    && rm google-chrome-stable_current_amd64.deb
 
-# Instalar Chromedriver compatible (Chrome for Testing)
+# Instalar Chromedriver
 RUN CHROME_VERSION=$(google-chrome --version | awk '{print $3}') && \
-    wget -q "https://edgedl.me.gvt1.com/edgedl/chrome/chrome-for-testing/${CHROME_VERSION}/linux64/chromedriver-linux64.zip" -O chromedriver.zip && \
-    unzip chromedriver.zip -d /usr/local/bin/ && \
-    mv /usr/local/bin/chromedriver-linux64/chromedriver /usr/local/bin/chromedriver && \
-    rm -rf chromedriver.zip /usr/local/bin/chromedriver-linux64
+    DRIVER_VERSION=$(wget -qO- "https://chromedriver.storage.googleapis.com/LATEST_RELEASE") && \
+    wget -q "https://chromedriver.storage.googleapis.com/${DRIVER_VERSION}/chromedriver_linux64.zip" && \
+    unzip chromedriver_linux64.zip && \
+    mv chromedriver /usr/local/bin/ && \
+    rm chromedriver_linux64.zip
 
-# Crear directorio de trabajo
+# Crear directorio de app
 WORKDIR /app
 
-# Instalar dependencias de Python
+# Copiar dependencias Python
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copiar todo el código
+# Copiar proyecto
 COPY . .
 
-# Exponer puerto
+# Exponer puerto para FastAPI
 EXPOSE 8000
 
-# Comando de ejecución
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Comando de arranque
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]

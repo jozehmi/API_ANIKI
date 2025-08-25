@@ -1,6 +1,9 @@
 from fastapi import APIRouter, HTTPException, Query
 from typing import Optional, List
 import requests
+from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
+from selenium_stealth import stealth
 from bs4 import BeautifulSoup
 from pydantic import BaseModel
 import urllib.parse
@@ -164,19 +167,43 @@ def build_url(
     base_url = "https://zonatmo.com/library"
     return f"{base_url}?{urllib.parse.urlencode(query_params, doseq=True)}"
 
-def scrape(url: str) -> List[MangaSearchResult]:
-    headers = ZONATMO_HEADERS
-    try:
-        response = requests.get(url, headers=headers, timeout=20)
-        response.raise_for_status()
-    except requests.RequestException as e:
-        raise HTTPException(status_code=500, detail=f"Failed to fetch data from ZonaTMO: {str(e)}")
+def scrape(url: str):
+    chrome_options = Options()
+    chrome_options.add_argument("--headless=new")
+    chrome_options.add_argument("--no-sandbox")
+    chrome_options.add_argument("--disable-dev-shm-usage")
+    chrome_options.add_argument("--disable-gpu")
+    chrome_options.add_argument("window-size=1920,1080")
 
-    soup = BeautifulSoup(response.text, "html.parser")
+    # Cambiar user-agent para parecer navegador real
+    chrome_options.add_argument(
+        "user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+        "AppleWebKit/537.36 (KHTML, like Gecko) "
+        "Chrome/124.0.0.0 Safari/537.36"
+    )
+
+    driver = webdriver.Chrome(options=chrome_options)
+
+    # Aplicar stealth para evitar detección de headless
+    stealth(driver,
+        languages=["es-ES", "es"],
+        vendor="Google Inc.",
+        platform="Win32",
+        webgl_vendor="Intel Inc.",
+        renderer="Intel Iris OpenGL Engine",
+        fix_hairline=True,
+    )
+
+    try:
+        driver.get(url)
+        html = driver.page_source
+    finally:
+        driver.quit()
+
+    soup = BeautifulSoup(html, "html.parser")
     cards = soup.select("div.element")
 
-    results: List[MangaSearchResult] = []
-
+    results = []
     for card in cards:
         a_elem = card.find("a", href=True)
         if not a_elem:
@@ -217,15 +244,15 @@ def scrape(url: str) -> List[MangaSearchResult]:
                 image_url = m.group(1).strip()
                 break
 
-        results.append(MangaSearchResult(
-            title=title_text,
-            score=score,
-            type=type_text,
-            demography=demography_text,
-            url=manga_url,
-            image_url=image_url,
-            is_erotic=is_erotic
-        ))
+        results.append({
+            "title": title_text,
+            "score": score,
+            "type": type_text,
+            "demography": demography_text,
+            "url": manga_url,
+            "image_url": image_url,
+            "is_erotic": is_erotic
+        })
 
     return results
 
