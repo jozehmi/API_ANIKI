@@ -5,3 +5,5 @@ httpx
 beautifulsoup4
 demjson3
 selenium
+lxml
+python-multipart
